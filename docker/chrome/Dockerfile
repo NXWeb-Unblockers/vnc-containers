@@ -34,7 +34,7 @@ RUN echo '#!/bin/bash' > /home/app/start.sh && \
 
 # Configure openbox to only show Chromium
 RUN mkdir -p /home/app/.config/openbox && \
-    echo 'chromium --no-sandbox --kiosk https://google.com &' > /home/app/.config/openbox/autostart && \
+    echo 'chromium --no-sandbox https://google.com &' > /home/app/.config/openbox/autostart && \
     chown -R app:app /home/app/.config
 
 USER app

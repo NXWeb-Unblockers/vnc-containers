@@ -12,6 +12,9 @@ async function connect(path) {
   const rfb = new RFB(
     document.getElementById('screen'), url);
 
+  rfb.scaleViewport = true;
+  rfb.resizeSession = true;
+
   rfb.addEventListener("connect", () => {
     status.value = "Connected";
   });
@@ -45,7 +48,7 @@ function getVNC() {
 
 <template>
   <button v-if="!status" @click="getVNC">Get VNC</button>
-  <div v-else class="top_bar">
+  <div v-if="status && status != 'Connected'" class="top_bar">
     <div class="status">{{ status }}</div>
   </div>
 
@@ -63,6 +66,8 @@ function getVNC() {
 #screen {
   flex: 1;
   overflow: hidden;
+  height: 100%;
+  width: 100%;
 }
 
 .top_bar {
