@@ -12,8 +12,9 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	"github.com/gofiber/contrib/websocket"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/contrib/v3/websocket"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/google/uuid"
 )
 
@@ -58,12 +59,12 @@ func main() {
 
 	app := fiber.New()
 
-	app.Static("/", "./frontend/dist")
+	app.Use(static.New("./frontend/dist"))
 
 	unusedContainer := map[string]bool{}
 	var mutex sync.Mutex
 
-	app.Get("/api/createContainer", func(c *fiber.Ctx) error {
+	app.Get("/api/createContainer", func(c fiber.Ctx) error {
 		id := uuid.NewString()
 		containerName := "chrome-instance-" + id
 

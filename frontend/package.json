@@ -12,12 +12,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@novnc/novnc": "https://github.com/novnc/noVNC/archive/refs/tags/v1.6.0.tar.gz",
-    "vue": "^3.5.22"
+    "@novnc/novnc": "https://github.com/novnc/noVNC/archive/refs/tags/v1.7.0.tar.gz",
+    "vue": "^3.5.43"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.1",
-    "vite": "^7.1.12",
-    "vite-plugin-vue-devtools": "^8.0.3"
+    "@vitejs/plugin-vue": "^6.0.9",
+    "vite": "^8.3.1",
+    "vite-plugin-vue-devtools": "^8.2.1"
   }
 }

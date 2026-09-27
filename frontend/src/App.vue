@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import RFB from '@novnc/novnc/core/rfb.js';
+import RFB from '@novnc/novnc';
 
 const status = ref(null);
 

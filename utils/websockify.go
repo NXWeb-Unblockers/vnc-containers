@@ -9,7 +9,7 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
-	"github.com/gofiber/contrib/websocket"
+	"github.com/gofiber/contrib/v3/websocket"
 )
 
 func HandleWebSocket(c *websocket.Conn, id string, cli *client.Client, unusedContainer map[string]bool, mutex *sync.Mutex) {
