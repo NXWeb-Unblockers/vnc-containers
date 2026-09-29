@@ -5,8 +5,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y \
-    x11vnc \
-    xvfb \
+    tigervnc-standalone-server \
+    openbox \
     chromium \
     --no-install-recommends \
     && apt-get clean \
@@ -20,19 +20,26 @@ WORKDIR /home/app
 RUN mkdir -p /home/app/.vnc && \
     chown -R app:app /home/app/.vnc
 
+COPY --chown=app:app rc.xml /home/app/.config/openbox/rc.xml
+
+# Hides Chromium's minimize/maximize/close buttons
+RUN mkdir -p /home/app/.config/gtk-3.0 && \
+    printf '[Settings]\ngtk-decoration-layout=:\n' > /home/app/.config/gtk-3.0/settings.ini && \
+    chown -R app:app /home/app/.config
+
 # Create the start script
 RUN echo '#!/bin/bash' > /home/app/start.sh && \
-    echo 'Xvfb :1 -screen 0 1280x720x24 &' >> /home/app/start.sh && \
+    echo 'Xvnc :1 -geometry 1280x720 -depth 24 -rfbport 5900 -SecurityTypes None &' >> /home/app/start.sh && \
     echo 'export DISPLAY=:1' >> /home/app/start.sh && \
     echo 'sleep 2' >> /home/app/start.sh && \
-    echo 'x11vnc -display :1 -forever -nopw &' >> /home/app/start.sh && \
-    echo 'exec chromium --no-sandbox --window-position=0,0 --window-size=1280,720 https://google.com' >> /home/app/start.sh && \
+    echo 'openbox &' >> /home/app/start.sh && \
+    echo 'exec chromium --no-sandbox --start-maximized https://google.com' >> /home/app/start.sh && \
     chmod +x /home/app/start.sh && \
     chown app:app /home/app/start.sh
 
 USER app
 
-# Expose VNC port
+# VNC port
 EXPOSE 5900
 
 # Start the VNC server when container launches
