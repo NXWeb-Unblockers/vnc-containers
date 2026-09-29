@@ -13,12 +13,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
-RUN useradd -m -s /bin/bash app
+RUN useradd -m -s /sbin/nologin app
 WORKDIR /home/app
-
-# Create directory for VNC (no password needed)
-RUN mkdir -p /home/app/.vnc && \
-    chown -R app:app /home/app/.vnc
 
 COPY --chown=app:app rc.xml /home/app/.config/openbox/rc.xml
 
