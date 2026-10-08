@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"github.com/NXWeb-Group/vnc-containers/utils"
 	"github.com/docker/docker/api/types/build"
@@ -20,7 +23,7 @@ import (
 
 func main() {
 
-	port := "8080"
+	port := "2000"
 	networkName := "chrome-vnc-network"
 
 	// Create a new Docker client using the default configuration
@@ -99,7 +102,26 @@ func main() {
 		utils.HandleWebSocket(c, id, cli, unusedContainer, &mutex)
 	}))
 
-	log.Println("Server starting on", port)
-	log.Fatal(app.Listen(":" + port))
+	// handle ctrl c
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
+	go func() {
+		log.Println("Server starting on", port)
+		if err := app.Listen(":" + port); err != nil {
+			log.Printf("Server stopped with error: %v", err)
+		}
+	}()
+
+	sig := <-sigChan
+	fmt.Printf("\nReceived signal: %v. Running cleanup...\n", sig)
+
+	if err := app.Shutdown(); err != nil {
+		fmt.Printf("Error shutting down Fiber: %v\n", err)
+	}
+
+	// app.Shutdown causes active ws containers to shutdown but this gets active conatiner names first
+	// fix later
+	utils.ShutdownContainers(cli)
+	fmt.Println("Exiting")
 }

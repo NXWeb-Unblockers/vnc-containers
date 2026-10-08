@@ -1,13 +1,11 @@
 package utils
 
 import (
-	"context"
 	"log"
 	"net"
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/gofiber/contrib/v3/websocket"
 )
@@ -107,35 +105,5 @@ func forwardWeb(wsConn *websocket.Conn, conn net.Conn) {
 			log.Printf("%s: writing to TCP failed: %s", time.Now().Format(time.Stamp), err)
 			return
 		}
-	}
-}
-
-func cleanupContainer(cli *client.Client, containerName string) {
-	if cli == nil {
-		log.Printf("Docker client is nil, cannot cleanup container %s", containerName)
-		return
-	}
-
-	ctx := context.Background()
-
-	// Stop the container
-	timeout := 10 // 10 seconds timeout
-	err := cli.ContainerStop(ctx, containerName, container.StopOptions{
-		Timeout: &timeout,
-	})
-	if err != nil {
-		log.Printf("Failed to stop container %s: %s", containerName, err)
-	} else {
-		log.Printf("Container %s stopped successfully", containerName)
-	}
-
-	// Remove the container
-	err = cli.ContainerRemove(ctx, containerName, container.RemoveOptions{
-		Force: true, // Force removal even if running
-	})
-	if err != nil {
-		log.Printf("Failed to remove container %s: %s", containerName, err)
-	} else {
-		log.Printf("Container %s removed successfully", containerName)
 	}
 }

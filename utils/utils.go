@@ -2,12 +2,16 @@ package utils
 
 import (
 	"archive/tar"
+	"context"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 )
 
@@ -72,5 +76,57 @@ func StartContainerTimer(cli *client.Client, containerName string, unusedContain
 	if _, exists := unusedContainer[containerName]; exists {
 		go cleanupContainer(cli, containerName)
 		delete(unusedContainer, containerName)
+	}
+}
+
+func cleanupContainer(cli *client.Client, containerName string) {
+	if cli == nil {
+		log.Printf("Docker client is nil, cannot cleanup container %s", containerName)
+		return
+	}
+
+	ctx := context.Background()
+
+	// Stop the container
+	timeout := 10 // 10 seconds timeout
+	err := cli.ContainerStop(ctx, containerName, container.StopOptions{
+		Timeout: &timeout,
+	})
+	if err != nil {
+		log.Printf("Failed to stop container %s: %s", containerName, err)
+	} else {
+		log.Printf("Container %s stopped successfully", containerName)
+	}
+
+	// Remove the container
+	err = cli.ContainerRemove(ctx, containerName, container.RemoveOptions{
+		Force: true, // Force removal even if running
+	})
+	if err != nil {
+		log.Printf("Failed to remove container %s: %s", containerName, err)
+	} else {
+		log.Printf("Container %s removed successfully", containerName)
+	}
+}
+
+func ShutdownContainers(cli *client.Client) {
+	if cli == nil {
+		log.Printf("Docker client is nil, cannot shutdown Chrome containers")
+		return
+	}
+
+	containers, err := cli.ContainerList(context.Background(), container.ListOptions{All: true})
+	if err != nil {
+		log.Printf("Failed to list Chrome containers: %s", err)
+		return
+	}
+
+	for _, item := range containers {
+		for _, name := range item.Names {
+			if strings.HasPrefix(strings.TrimPrefix(name, "/"), "chrome-instance-") {
+				cleanupContainer(cli, item.ID)
+				break
+			}
+		}
 	}
 }
