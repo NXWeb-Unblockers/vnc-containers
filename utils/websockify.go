@@ -11,7 +11,7 @@ import (
 )
 
 func HandleWebSocket(c *websocket.Conn, id string, cli *client.Client, unusedContainer map[string]bool, mutex *sync.Mutex) {
-	containerName := "chrome-instance-" + id
+	containerName := "vnc-instance-" + id
 	targetAddr := containerName + ":5900"
 
 	mutex.Lock()
@@ -21,8 +21,8 @@ func HandleWebSocket(c *websocket.Conn, id string, cli *client.Client, unusedCon
 	vnc, err := net.Dial("tcp", targetAddr)
 	if err != nil {
 		log.Printf("%s: failed to bind to the VNC Server: %s", time.Now().Format(time.Stamp), err)
-		// If we can't connect to VNC, clean up the container immediately
-		go cleanupContainer(cli, containerName)
+		// If we can't connect to VNC, stop the container immediately
+		go stopContainer(cli, containerName)
 		return
 	}
 
@@ -44,8 +44,8 @@ func HandleWebSocket(c *websocket.Conn, id string, cli *client.Client, unusedCon
 	<-done
 
 	// Clean up the container when websocket disconnects
-	log.Printf("WebSocket disconnected for container %s, cleaning up...", containerName)
-	go cleanupContainer(cli, containerName)
+	log.Printf("WebSocket disconnected for container %s, Stopping...", containerName)
+	go stopContainer(cli, containerName)
 }
 
 func forwardTcp(wsConn *websocket.Conn, conn net.Conn) {

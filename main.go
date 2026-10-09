@@ -3,16 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 
 	"github.com/NXWeb-Group/vnc-containers/utils"
-	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/gofiber/contrib/v3/websocket"
@@ -24,7 +24,7 @@ import (
 func main() {
 
 	port := "2000"
-	networkName := "chrome-vnc-network"
+	networkName := "vnc-network"
 
 	// Create a new Docker client using the default configuration
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -32,33 +32,10 @@ func main() {
 		log.Fatalf("Failed to create Docker client: %v", err)
 	}
 
-	buildContext, err := utils.CreateTarArchive("./docker/chrome")
+	err = utils.CreateImages(cli, "./docker")
 	if err != nil {
-		log.Fatalf("Failed to create build context: %v", err)
+		log.Fatalf("Failed to create Docker images: %v", err)
 	}
-	// Build options
-	buildOptions := build.ImageBuildOptions{
-		Dockerfile: "Dockerfile",
-		Tags:       []string{"chrome-instance:latest"},
-		Remove:     true,
-	}
-
-	ctx := context.Background()
-
-	// Build the image
-	response, err := cli.ImageBuild(ctx, buildContext, buildOptions)
-	if err != nil {
-		log.Fatalf("Failed to build image: %v", err)
-	}
-	defer response.Body.Close()
-
-	// Stream the build output
-	_, err = io.Copy(os.Stdout, response.Body)
-	if err != nil {
-		log.Fatalf("Failed to read build output: %v", err)
-	}
-
-	log.Println("Docker image built successfully!")
 
 	app := fiber.New()
 
@@ -67,12 +44,54 @@ func main() {
 	unusedContainer := map[string]bool{}
 	var mutex sync.Mutex
 
-	app.Get("/api/createContainer", func(c fiber.Ctx) error {
+	app.Get("/api/getImages", func(c fiber.Ctx) error {
+		images, err := cli.ImageList(context.Background(), image.ListOptions{})
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to list images: " + err.Error())
+		}
+
+		names := []string{}
+		for _, image := range images {
+			for _, tag := range image.RepoTags {
+				if !strings.HasPrefix(tag, "vnc-") {
+					continue
+				}
+				name := strings.TrimPrefix(tag, "vnc-")
+				name = strings.TrimSuffix(name, ":latest")
+				names = append(names, name)
+			}
+		}
+		return c.JSON(names)
+	})
+
+	app.Get("/api/getContainers", func(c fiber.Ctx) error {
+		containers, err := cli.ContainerList(context.Background(), container.ListOptions{All: true})
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to list containers: " + err.Error())
+		}
+
+		names := []string{}
+		for _, container := range containers {
+			for _, name := range container.Names {
+				if strings.HasPrefix(strings.TrimPrefix(name, "/"), "vnc-instance-") {
+					names = append(names, strings.TrimPrefix(name, "/"))
+				}
+			}
+		}
+		return c.JSON(names)
+	})
+
+	app.Post("/api/createContainer", func(c fiber.Ctx) error {
+		var body struct{ Name string }
+		if err := c.Bind().Body(&body); err != nil {
+			return c.Status(fiber.StatusBadRequest).SendString("Invalid request body: " + err.Error())
+		}
+
 		id := uuid.NewString()
-		containerName := "chrome-instance-" + id
+		containerName := "vnc-instance-" + id
 
 		resp, err := cli.ContainerCreate(context.Background(), &container.Config{
-			Image: "chrome-instance:latest",
+			Image: "vnc-" + body.Name + ":latest",
 		}, nil, &network.NetworkingConfig{
 			EndpointsConfig: map[string]*network.EndpointSettings{
 				networkName: {},
