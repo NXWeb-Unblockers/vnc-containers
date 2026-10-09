@@ -3,7 +3,8 @@ import { ref, onMounted } from "vue";
 import RFB from "@novnc/novnc";
 
 const status = ref(null);
-const image = ref(null);
+const image = ref([]);
+const containers = ref([]);
 
 async function connect(path) {
   const url =
@@ -27,10 +28,37 @@ async function connect(path) {
   });
 }
 
+function CreateContainer(name) {
+  status.value = "Creating container";
+
+  fetch("/api/createContainer", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ name })
+  })
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error("Network response was not ok");
+    })
+    .then((data) => {
+      console.log(data);
+      setTimeout(() => {
+        connect(data.id);
+      }, 5000);
+    })
+    .catch((error) => {
+      console.error("There was a problem with the fetch operation:", error);
+    });
+}
+
 function StartContainer(name) {
   status.value = "Starting container";
 
-  fetch("/api/createContainer", {
+  fetch("/api/startContainer", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -70,16 +98,41 @@ function getImages() {
       console.error("There was a problem with the fetch operation:", error);
     });
 }
+function getContainers() {
+  fetch("/api/getContainers")
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error("Network response was not ok");
+    })
+    .then((data) => {
+      console.log(data);
+      containers.value = data;
+    })
+    .catch((error) => {
+      console.error("There was a problem with the fetch operation:", error);
+    });
+}
 
 onMounted(() => {
   getImages();
+  getContainers();
 });
 </script>
 
 <template>
-  <div v-if="image && image.length > 0 && !status ">
+  <div v-if="image.length > 0 && !status ">
+    <h2>Select an image to create a new container</h2>
     <div v-for="img in image" :key="img">
-      <button @click="StartContainer(img)">{{ img }}</button>
+      <button @click="CreateContainer(img)">{{ img }}</button>
+    </div>
+  </div>
+
+  <div v-if="containers.length > 0 && !status ">
+    <h2>Start a Container</h2>
+    <div v-for="container in containers" :key="container">
+      <button @click="StartContainer(container)">{{ container }}</button>
     </div>
   </div>
 

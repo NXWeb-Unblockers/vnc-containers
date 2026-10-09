@@ -110,7 +110,33 @@ func main() {
 		unusedContainer[containerName] = true
 		mutex.Unlock()
 
-		go utils.StartContainerTimer(cli, containerName, unusedContainer, &mutex)
+		go utils.StartContainerTimer(cli, containerName, unusedContainer, &mutex, true)
+
+		return c.JSON(fiber.Map{"id": id})
+	})
+
+	app.Post("/api/startContainer", func(c fiber.Ctx) error {
+		var body struct{ Name string }
+		if err := c.Bind().Body(&body); err != nil {
+			return c.Status(fiber.StatusBadRequest).SendString("Invalid request body: " + err.Error())
+		}
+
+		containerName := body.Name
+		if !strings.HasPrefix(containerName, "vnc-instance-") {
+			return c.Status(fiber.StatusBadRequest).SendString("Invalid container name")
+		}
+		id := strings.TrimPrefix(containerName, "vnc-instance-")
+
+		err = cli.ContainerStart(context.Background(), containerName, container.StartOptions{})
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to start container: " + err.Error())
+		}
+
+		mutex.Lock()
+		unusedContainer[containerName] = true
+		mutex.Unlock()
+
+		go utils.StartContainerTimer(cli, containerName, unusedContainer, &mutex, false)
 
 		return c.JSON(fiber.Map{"id": id})
 	})

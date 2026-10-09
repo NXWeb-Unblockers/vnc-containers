@@ -117,13 +117,17 @@ func CreateImages(cli *client.Client, dockerfilePath string) error {
 	return nil
 }
 
-func StartContainerTimer(cli *client.Client, containerName string, unusedContainer map[string]bool, mutex *sync.Mutex) {
+func StartContainerTimer(cli *client.Client, containerName string, unusedContainer map[string]bool, mutex *sync.Mutex, deleteContainer bool) {
 	time.Sleep(1 * time.Minute)
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	if _, exists := unusedContainer[containerName]; exists {
-		go cleanupContainer(cli, containerName)
+		if deleteContainer {
+			go cleanupContainer(cli, containerName)
+		} else {
+			go stopContainer(cli, containerName)
+		}
 		delete(unusedContainer, containerName)
 	}
 }

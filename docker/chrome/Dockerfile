@@ -25,6 +25,7 @@ RUN mkdir -p /home/app/.config/gtk-3.0 && \
 
 # Create the start script
 RUN echo '#!/bin/bash' > /home/app/start.sh && \
+    echo 'rm -f /tmp/.X1-lock /tmp/.X11-unix/X1' >> /home/app/start.sh && \
     echo 'Xvnc :1 -geometry 1280x720 -depth 24 -rfbport 5900 -SecurityTypes None &' >> /home/app/start.sh && \
     echo 'export DISPLAY=:1' >> /home/app/start.sh && \
     echo 'sleep 2' >> /home/app/start.sh && \
