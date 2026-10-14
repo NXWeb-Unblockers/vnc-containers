@@ -7,16 +7,20 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     tigervnc-standalone-server \
     openbox \
-    chromium \
-    --no-install-recommends \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    --no-install-recommends
 
 # Create a non-root user
 RUN useradd -m -s /sbin/nologin app
 WORKDIR /home/app
 
 COPY --chown=app:app rc.xml /home/app/.config/openbox/rc.xml
+
+# Install additional packages
+RUN apt-get install -y \
+    chromium \
+    --no-install-recommends \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Hides Chromium's minimize/maximize/close buttons
 RUN mkdir -p /home/app/.config/gtk-3.0 && \

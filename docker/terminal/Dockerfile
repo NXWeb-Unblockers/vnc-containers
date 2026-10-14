@@ -7,17 +7,23 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     tigervnc-standalone-server \
     openbox \
+    --no-install-recommends
+
+# Create a non-root user
+RUN useradd -m -s /bin/bash app
+WORKDIR /home/app
+
+# Install additional packages
+RUN apt-get install -y \
     alacritty \
     sudo \
     --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user
-RUN useradd -m -s /bin/bash app
+# giver sudo perms
 RUN echo "app:app" | sudo chpasswd
 RUN usermod -aG sudo app
-WORKDIR /home/app
 
 # Create the start script
 RUN echo '#!/bin/bash' > /home/app/start.sh && \
