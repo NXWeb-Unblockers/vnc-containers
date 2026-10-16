@@ -82,6 +82,32 @@ function StartContainer(name) {
     });
 }
 
+function DeleteContainer(name) {
+  status.value = "Deleting container";
+
+  fetch("/api/deleteContainer", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ name })
+  })
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error("Network response was not ok");
+    })
+    .then((data) => {
+      console.log(data);
+      getContainers();
+      status.value = null;
+    })
+    .catch((error) => {
+      console.error("There was a problem with the fetch operation:", error);
+    });
+}
+
 function getImages() {
   fetch("/api/getImages")
     .then((response) => {
@@ -133,6 +159,7 @@ onMounted(() => {
     <h2>Start a Container</h2>
     <div v-for="container in containers" :key="container">
       <button @click="StartContainer(container)">{{ container }}</button>
+      <button @click="DeleteContainer(container)">Delete</button>
     </div>
   </div>
 

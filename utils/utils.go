@@ -124,7 +124,7 @@ func StartContainerTimer(cli *client.Client, containerName string, unusedContain
 
 	if _, exists := unusedContainer[containerName]; exists {
 		if deleteContainer {
-			go cleanupContainer(cli, containerName)
+			go CleanupContainer(cli, containerName)
 		} else {
 			go stopContainer(cli, containerName)
 		}
@@ -132,7 +132,7 @@ func StartContainerTimer(cli *client.Client, containerName string, unusedContain
 	}
 }
 
-func cleanupContainer(cli *client.Client, containerName string) {
+func CleanupContainer(cli *client.Client, containerName string) {
 	if cli == nil {
 		log.Printf("Docker client is nil, cannot cleanup container %s", containerName)
 		return

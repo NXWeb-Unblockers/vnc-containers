@@ -141,6 +141,19 @@ func main() {
 		return c.JSON(fiber.Map{"id": id})
 	})
 
+	app.Post("/api/deleteContainer", func(c fiber.Ctx) error {
+		var body struct{ Name string }
+		if err := c.Bind().Body(&body); err != nil {
+			return c.Status(fiber.StatusBadRequest).SendString("Invalid request body: " + err.Error())
+		}
+
+		containerName := body.Name
+
+		utils.CleanupContainer(cli, containerName)
+
+		return c.JSON(fiber.Map{"success": true})
+	})
+
 	app.Get("/websockify/:id", websocket.New(func(c *websocket.Conn) {
 		id := c.Params("id")
 		log.Println("WebSocket connection established")
