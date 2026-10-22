@@ -5,6 +5,8 @@ import RFB from "@novnc/novnc";
 const status = ref(null);
 const image = ref([]);
 const containers = ref([]);
+const clipboardText = ref("");
+const clipboardOpen = ref(false);
 
 async function connect(path) {
   const url =
@@ -26,6 +28,14 @@ async function connect(path) {
   rfb.addEventListener("disconnect", () => {
     status.value = "Disconnected";
   });
+  rfb.addEventListener("clipboard", (event) => {
+    clipboardText.value = event.detail.text;
+  });
+}
+
+// sends the textarea contents to the remote session whenever the user edits it
+function sendClipboard() {
+  rfb.clipboardPasteFrom(clipboardText.value);
 }
 
 function CreateContainer(name) {
@@ -168,6 +178,26 @@ onMounted(() => {
     <div class="status">{{ status }}</div>
   </div>
 
+  <div v-if="status === 'Connected'" class="clipboard-drawer" :class="{ open: clipboardOpen }">
+    <div class="clipboard-panel">
+      <label for="clipboard">Clipboard (shared with VNC session)</label>
+      <textarea
+        id="clipboard"
+        v-model="clipboardText"
+        @input="sendClipboard"
+        placeholder="Paste here to send to the VNC session, or copy text copied inside the session"
+      ></textarea>
+    </div>
+    <button
+      class="clipboard-tab"
+      type="button"
+      :aria-expanded="clipboardOpen"
+      @click="clipboardOpen = !clipboardOpen"
+    >
+      Clipboard
+    </button>
+  </div>
+
   <div id="screen"></div>
 </template>
 
@@ -189,5 +219,59 @@ onMounted(() => {
   font: bold 12px Helvetica;
   padding: 6px 5px 4px 5px;
   border-bottom: 1px outset;
+}
+
+.clipboard-drawer {
+  --clipboard-tab-width: 22px;
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translate(calc(100% - var(--clipboard-tab-width)), -50%);
+  transition: transform 0.25s ease;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: stretch;
+  z-index: 1000;
+}
+
+.clipboard-drawer.open {
+  transform: translateY(-50%);
+}
+
+.clipboard-tab {
+  box-sizing: border-box;
+  width: var(--clipboard-tab-width);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  align-self: center;
+  background-color: #6e84a3;
+  color: white;
+  border: none;
+  border-radius: 0 6px 6px 0;
+  padding: 10px 6px;
+  cursor: pointer;
+  font: bold 12px Helvetica;
+}
+
+.clipboard-panel {
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  padding: 10px;
+  background: white;
+  border: 1px solid #6e84a3;
+  border-right: none;
+  box-shadow: -2px 0 6px rgba(0, 0, 0, 0.2);
+}
+
+.clipboard-panel label {
+  font: bold 12px Helvetica;
+  margin-bottom: 6px;
+}
+
+.clipboard-panel textarea {
+  width: 100%;
+  height: 120px;
+  resize: vertical;
 }
 </style>
