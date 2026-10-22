@@ -7,6 +7,7 @@ const image = ref([]);
 const containers = ref([]);
 const clipboardText = ref("");
 const clipboardOpen = ref(false);
+let rfb;
 
 async function connect(path) {
   const url =
@@ -17,7 +18,7 @@ async function connect(path) {
 
   console.log(url);
 
-  const rfb = new RFB(document.getElementById("screen"), url);
+  rfb = new RFB(document.getElementById("screen"), url);
 
   rfb.scaleViewport = true;
   rfb.resizeSession = true;
